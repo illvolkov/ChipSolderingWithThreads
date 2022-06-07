@@ -44,7 +44,9 @@ class GeneratedThread: Thread {
             Thread.current.cancel()
             print("----------------Generation finished\n")
             print("Remaining chips in storage: \(chips)\n")
-            print("----------------GeneratedThread is cancelled? \(GeneratedThread.current.isCancelled)\n")
+            if GeneratedThread.current.isCancelled {
+                print("----------------GeneratedThread is cancelled\n")
+            }
         } else {
             semaphoreAppend()
         }
@@ -54,9 +56,7 @@ class GeneratedThread: Thread {
 //MARK: - WorkerThread
 
 class WorkerThread: Thread {
-    
-    var chip = Chip(chipType: .big)
-        
+            
     override func main() {
         name = "WorkerThread"
                                 
@@ -66,7 +66,6 @@ class WorkerThread: Thread {
             
             while !chips.isEmpty {
                 semaphorePop()
-                chip.sodering()
                 print("The chip is soldered\n")
             }
         }
@@ -94,6 +93,7 @@ func semaphorePop() -> Chip {
     print("\(Thread.current.name ?? "") - Chip taken: \(chips.last ?? Chip(chipType: .big))")
     let poppedChip = chips.remove(at: index)
     semaphore.signal()
+    poppedChip.sodering()
     return poppedChip
 }
 
