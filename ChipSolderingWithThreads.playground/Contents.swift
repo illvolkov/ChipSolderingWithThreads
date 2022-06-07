@@ -55,7 +55,7 @@ class GeneratedThread: Thread {
 
 class WorkerThread: Thread {
     
-    var chip: Chip?
+    var chip = Chip(chipType: .big)
         
     override func main() {
         name = "WorkerThread"
@@ -66,7 +66,7 @@ class WorkerThread: Thread {
             
             while !chips.isEmpty {
                 semaphorePop()
-                chip?.sodering()
+                chip.sodering()
                 print("The chip is soldered\n")
             }
         }
