@@ -24,31 +24,36 @@ public struct Chip {
 }
 
 var time = 20
+var chips = [Chip]()
+var isGeneratedStoped = false
 
 //MARK: - GeneratedThread
 
 class GeneratedThread: Thread {
-            
-    override func main() {
-        name = "GeneratedThread"
-        RunLoop.current.add(timer, forMode: .default)
-        RunLoop.current.run()
-    }
-    
-    let timer = Timer(timeInterval: 2, repeats: true) { timer in
-            
-        time -= 2
         
-        if time < 0 {
-            timer.invalidate()
-            Thread.current.cancel()
-            print("----------------Generation finished\n")
-            print("Remaining chips in storage: \(chips)\n")
-            if GeneratedThread.current.isCancelled {
-                print("----------------GeneratedThread is cancelled\n")
+    override func main() {
+                
+        DispatchQueue.main.async {
+            Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { timer in
+                
+                time -= 2
+                
+                if time < 0 {
+                    timer.invalidate()
+                    print("----------------Generation finished\n")
+                    print("GeneratedThread stop time: \(Date())")
+                    if !chips.isEmpty {
+                        print("Remaining chips in storage:\n")
+                        for chip in chips {
+                            print("Chip size: \(chip.chipType)\n")
+                        }
+                    }
+                    isGeneratedStoped = true
+                    GeneratedThread.exit()
+                } else {
+                    semaphoreAppend()
+                }
             }
-        } else {
-            semaphoreAppend()
         }
     }
 }
@@ -64,9 +69,18 @@ class WorkerThread: Thread {
             
             Thread.sleep(forTimeInterval: 0.1)
             
-            while !chips.isEmpty {
-                semaphorePop()
-                print("The chip is soldered\n")
+            if !isGeneratedStoped {
+                while !chips.isEmpty {
+                    semaphorePop()
+                    print("The chip is soldered")
+                    print("Soldering end time: \(Date())\n")
+                }
+            } else {
+                print("----------------Worker finished")
+                print("WorkerThread stop time: \(Date())")
+                print("GeneratedThread and WorkerThread completed their work")
+                print("Completed time: \(Date())")
+                WorkerThread.exit()
             }
         }
     }
@@ -74,27 +88,26 @@ class WorkerThread: Thread {
 
 //MARK: - Stack
 
-var chips = [Chip]()
-
 let semaphore = DispatchSemaphore(value: 1)
 
 func semaphoreAppend() {
             
     semaphore.wait()
     chips.append(Chip.make())
-    print("\(Thread.current.name ?? "") - Chip added: \(chips.last ?? Chip(chipType: .big))")
+    print("GeneratedThread - Added size chip: \(chips.last?.chipType ?? Chip.ChipType.big)")
+    print("Adding time: \(Date())")
     semaphore.signal()
 }
 
-func semaphorePop() -> Chip {
+func semaphorePop() {
     
     semaphore.wait()
     let index = chips.count - 1
-    print("\(Thread.current.name ?? "") - Chip taken: \(chips.last ?? Chip(chipType: .big))")
+    print("\(Thread.current.name ?? "") - Taken chip size: \(chips.last?.chipType ?? Chip.ChipType.big)")
     let poppedChip = chips.remove(at: index)
+    print("Taking time: \(Date())")
     semaphore.signal()
     poppedChip.sodering()
-    return poppedChip
 }
 
 let generate = GeneratedThread()
